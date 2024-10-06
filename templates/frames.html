@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing Video Frames</title>
+    <style>
+        img { width: 400px; }
+    </style>
+</head>
+<body>
+    <h1>Processing Video Frame</h1>
+    <img id="current-frame" src="" alt="Current Frame">
+    <div id="progress"></div>
+    <div id="download-container" style="display:none;">
+        <a id="download-link" href="#">Download Processed Video</a>
+    </div>
+    <br>
+    <a href="/" style="font-size: 16px;">Home</a>  <!-- Home button -->
+
+    <script>
+        const videoId = "{{ video_id }}";  // Get the video ID from the server
+        let intervalId = null;  // Variable to store the interval ID
+
+        // Function to fetch and update the current frame
+        function fetchFrame() {
+            fetch(`/frame/${videoId}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.blob();  // Get the image as a blob
+                    } else {
+                        throw new Error('Frame not found');
+                    }
+                })
+                .then(imageBlob => {
+                    const imgElement = document.getElementById('current-frame');
+                    imgElement.src = URL.createObjectURL(imageBlob);  // Update the image source
+                })
+                .catch(error => {
+                    console.error('Error fetching frame:', error);
+                });
+        }
+
+        // Function to check the processing progress
+        function checkProgress() {
+            fetch(`/progress/${videoId}`)
+                .then(response => response.json())
+                .then(status => {
+                    // Update progress only when total_frames > 0
+                    if (status.total_frames > 0) {
+                        document.getElementById('progress').innerText = `Processed ${status.processed_frames} out of ${status.total_frames} frames.`;
+
+                        // Continue updating the frame if not done
+                        if (status.processed_frames < status.total_frames) {
+                            fetchFrame();  // Keep fetching frames
+                        } else {
+                            clearInterval(intervalId);  // Stop checking once done
+                            fetchFrame();  // Fetch the last frame once
+                            document.getElementById('download-link').href = `/download/${videoId}`;
+                            document.getElementById('download-container').style.display = "block";
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking progress:', error);
+                });
+        }
+
+        // Start checking for updates after the total number of frames is available
+        window.onload = function() {
+            function startProgressCheck() {
+                fetch(`/progress/${videoId}`)
+                    .then(response => response.json())
+                    .then(status => {
+                        // Only start the interval when total frames are available
+                        if (status.total_frames > 0) {
+                            intervalId = setInterval(checkProgress, 1000);  // Start checking every second
+                        } else {
+                            // Retry after 1 second if total_frames is still 0
+                            setTimeout(startProgressCheck, 1000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching initial progress:', error);
+                    });
+            }
+
+            startProgressCheck();  // Start the progress check loop
+
+            // Check if the download link should be shown on page load
+            fetch(`/progress/${videoId}`)
+                .then(response => response.json())
+                .then(status => {
+                    if (status.show_download_link) {
+                        document.getElementById('download-link').href = `/download/${videoId}`;
+                        document.getElementById('download-container').style.display = "block";
+                    }
+                });
+        };
+    </script>
+</body>
+</html>
