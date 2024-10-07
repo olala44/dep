@@ -6,12 +6,18 @@
     <title>Processing Video Frames</title>
     <style>
         img { width: 400px; }
+        .message { font-size: 18px; color: red; display: none; } /* Style for both messages */
     </style>
 </head>
 <body>
     <h1>Processing Video Frame</h1>
     <img id="current-frame" src="" alt="Current Frame">
     <div id="progress"></div>
+
+    <!-- Display accident or car stopped messages separately -->
+    <div id="accident-message" class="message">Accident detected!</div>
+    <div id="car-stopped-message" class="message">Car stopped!</div>
+
     <div id="download-container" style="display:none;">
         <a id="download-link" href="#">Download Processed Video</a>
     </div>
@@ -49,6 +55,20 @@
                     // Update progress only when total_frames > 0
                     if (status.total_frames > 0) {
                         document.getElementById('progress').innerText = `Processed ${status.processed_frames} out of ${status.total_frames} frames.`;
+
+                        // Check for accident condition
+                        if (status.is_accident === 1) {
+                            document.getElementById('accident-message').style.display = "block";
+                        } else {
+                            document.getElementById('accident-message').style.display = "none";
+                        }
+
+                        // Check for car stopped condition
+                        if (status.is_car_stopped === 1) {
+                            document.getElementById('car-stopped-message').style.display = "block";
+                        } else {
+                            document.getElementById('car-stopped-message').style.display = "none";
+                        }
 
                         // Continue updating the frame if not done
                         if (status.processed_frames < status.total_frames) {

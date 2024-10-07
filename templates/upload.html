@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Video</title>
+</head>
+<body>
+    <h1>Upload Video</h1>
+
+    <!-- Form to upload video -->
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="video" id="video" accept="video/*">
+        <button type="submit">Upload</button>
+    </form>
+
+    <!-- Progress Bar -->
+    <div id="progress-container" style="display:none;">
+        <progress id="progress-bar" value="0" max="100"></progress>
+        <span id="progress-text">0%</span>
+    </div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const videoInput = document.getElementById('video');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const progressContainer = document.getElementById('progress-container');
+
+        form.onsubmit = function(event) {
+            event.preventDefault();
+
+            // Check if a file is selected
+            if (!videoInput.files.length) {
+                alert('Please select a video file to upload.');
+                return;
+            }
+
+            const file = videoInput.files[0];
+
+            // Check if the selected file is a valid video
+            const validVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/mkv'];
+            if (!validVideoTypes.includes(file.type)) {
+                alert('Invalid file type. Please upload a video file (mp4, avi, mov, mkv).');
+                return;
+            }
+
+            // Start file upload
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            // Display the progress bar
+            progressContainer.style.display = 'block';
+
+            // Track the progress of the upload
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    progressBar.value = percentComplete;
+                    progressText.innerText = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // Redirect to the processing page after upload
+                    window.location.href = xhr.responseURL;
+                } else {
+                    alert('Failed to upload video. Please try again.');
+                }
+            };
+
+            xhr.send(formData);
+        };
+    </script>
+</body>
+</html>
